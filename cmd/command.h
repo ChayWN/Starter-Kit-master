@@ -7,8 +7,10 @@ namespace cmd
 {
     extern std::string movingDirection;
 
+    void RefreshBoard();
     void CommandInput();
     void ZombieTurn();
+    void ZombieDamagedDialogue(Zombie z, int dmg);
 }
 
 #endif

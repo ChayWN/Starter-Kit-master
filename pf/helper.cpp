@@ -1,5 +1,4 @@
 #include "../dependencies.h"
-
 using namespace std;
 
 typedef vector<vector<char>> board;
@@ -34,6 +33,29 @@ namespace pf
         return system(R"(read -p "Press any key to continue . . . " dummy)");
 #endif
     }
+    
+    map<char, int> char_to_color = {{g_trail, 4}, {g_health, 2}, {g_rock, 4}, {g_pod, 3}, {g_arrowUp, 7}, {g_arrowDown, 7}, {g_arrowLeft, 7}, {g_arrowRight, 7}, {g_witch, 5}, {g_hangman, 5}, {g_fireball, 1}, {g_alien, 4}};
+
+    void ColorChar(char ch)
+    {
+        int color = char_to_color[ch];
+        std::cout << "\033[1;3" << color << "m" << ch << "\033[0m";
+    }
+    
+    void ColorString(string str, int color_index)
+    {
+        std::cout << "\033[1;3" << color_index << "m" << str << "\033[0m";
+    }
+
+    void ColorInt(int num, int color_index)
+    {
+        std::cout << "\033[1;3" << color_index << "m" << num << "\033[0m";
+    }
+
+    void ColorZombie(char ch, int color_index)
+    {
+        std::cout << "\033[1;3" << color_index << "m" << ch << "\033[0m";
+    }
 
     void CarryOutTurns()
     {
@@ -51,9 +73,10 @@ namespace pf
     {
         vector<char> objects =
             {
-                g_empty, g_empty, g_empty, g_empty, g_empty,
-                g_rock, g_rock, g_pod, g_pod, g_health, g_health,
-                g_arrowUp, g_arrowDown, g_arrowLeft, g_arrowRight};
+                g_empty, g_empty, g_empty, g_empty, g_empty, g_empty, g_empty, g_empty, g_empty, g_empty,
+                g_rock, g_rock, g_pod, g_pod, g_health, g_health, g_rock, g_rock, g_pod, g_pod, g_health, g_health,
+                g_arrowUp, g_arrowDown, g_arrowLeft, g_arrowRight, g_arrowUp, g_arrowDown, g_arrowLeft, g_arrowRight,
+                g_witch, g_hangman, g_fireball, g_fireball};
 
         char randomObj = objects[random_number % objects.size()];
 
@@ -93,6 +116,7 @@ namespace pf
             {
                 for (int col = 0; col < kColumns; ++col)
                 {
+
                     if (b[row][col] == g_alien)
                         continue;
 
@@ -104,6 +128,7 @@ namespace pf
                         {
                             Zombie z(zombieCount + 1, col, row);
                             b[row][col] = z.character;
+                            map<char, int> char_to_color = {{z.character, 2}};
                             zombiesArray.push_back(z);
                         }
                         else
@@ -144,32 +169,50 @@ namespace pf
     {
         if (alien.active)
         {
-            cout << "->  ";
+            ColorString("->  ", 4);
         }
         else
         {
             cout << "    ";
         }
-        cout << "Alien     : Life " << alien.life << ", Attack  " << alien.attack << endl;
+        ColorString("Alien     ", 4);
+        cout << ": Life " << alien.life << ", Attack  " << alien.attack << ", ";
+        ColorString("Fireball  ", 1);
+        ColorInt(alien.fireball, 1);
+
+        if (alien.poison)
+        {
+            ColorString("   (poisoned)", 1);
+        }
+        cout << endl;
+
         for (int i = 0; i < zombiesArray.size(); ++i)
         {
             Zombie z = zombiesArray[i];
             if (z.active)
             {
-                cout << "->  ";
+                ColorString("->  ", 2);
             }
             else
             {
                 cout << "    ";
             }
-            cout << "Zombie " << z.sequence << "  : Life " << z.life << ", Attack  " << z.attack << ", Range  " << z.range << endl;
+
+            ColorString("Zombie ", 2);
+            ColorInt(z.sequence, 2);
+            cout << "  : Life " << z.life << ", Attack  " << z.attack << ", Range  " << z.range;
+            if (z.poison)
+            {
+                ColorString("   (poisoned)", 2);
+            }
+            cout << endl;
         };
         cout << endl;
     }
 
     void ShowGameBoard()
     {
-        cout << "\t.: Alien vs Zombie :." << endl;
+        ColorString("\t\t.: Alien vs Zombie :.\n", 5);
         for (int row = 0; row < kRows; ++row)
         {
             cout << "    ";
@@ -181,7 +224,24 @@ namespace pf
                  << "  " << row + 1 << " ";
             for (int col = 0; col < kColumns; ++col)
             {
-                cout << "|" << b[row][col];
+                cout << "|" ;
+                bool zombieactive = false;
+                //to indicate that the active zombie is green color in the board
+                for (int i = 0; i < zombiesArray.size(); ++i)
+                {
+                    Zombie z = zombiesArray[i];
+                    if (z.active)
+                    {
+                        if(b[row][col] == z.character){
+                            ColorZombie(z.character, 2);
+                            zombieactive = true;
+                            break;
+                        }
+                    }
+                }
+                if(!zombieactive){
+                    ColorChar(b[row][col]);
+                }
             }
             cout << "|" << endl;
         }
@@ -252,8 +312,8 @@ namespace pf
 
     void DefaultSettings()
     {
-        ClearScreen();
         char reply;
+        ClearScreen();
         cout << "Default Game Settings" << endl;
         cout << "------------------------" << endl;
         cout << "Board Rows    : " << kRows << endl;

@@ -39,6 +39,8 @@
         "xutility": "cpp",
         "cctype": "cpp",
         "string": "cpp",
-        "fstream": "cpp"
+        "fstream": "cpp",
+        "algorithm": "cpp",
+        "sstream": "cpp"
     }
 }

@@ -52,8 +52,6 @@ Additional features will be included in part 2 demonstration.
 
 ## __Problems Encountered & Solutions__
 
-Describe the problems encountered and provide the solutions / plan for the solutions.
-
 1. __Problem :__ Encounters a bug on the zombie's movement that they could move even though there's an alien or another zombie beside them, how to make the zombie detect that there is an alien or border around their surroundings and change their direction. <br/>
    __Solution :__ Consulted with my teammate and searched online on the possible solution to this problem, result shows that by adding CheckForCollision() function to the zombie class, it could check for the collision with other objects.
 

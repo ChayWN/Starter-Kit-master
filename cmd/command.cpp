@@ -9,12 +9,70 @@ namespace cmd
 
     vector<string> commandList =
         {
-            "up", "down", "left", "right", "arrow", "help", "save", "load", "quit"};
+            "up", "down", "left", "right", "fireball", "arrow", "help", "save", "load", "quit"};
 
     void RefreshBoard()
     {
         pf::ClearScreen();
         pf::ShowGameBoard();
+    }
+
+    void ColorString(string str, int color_index)
+    {
+        std::cout << "\033[1;3" << color_index << "m" << str << "\033[0m";
+    }
+
+    void RestartPrompt()
+    {
+        char again;
+
+        cout << "Play again? (y/n) => ";
+        cin >> again;
+        again = tolower(again);
+
+        if (again == 'y')
+        {
+            cout << "\nNew board initialized." << endl;
+            pf::CreateGameBoard();
+        }
+        else if (again == 'n')
+        {
+            cout << "\nGoodbye!" << endl;
+            g_quitGame = true;
+        }
+        else
+        {
+            cout << "Invalid Input!" << endl;
+            pf::Pause();
+            RefreshBoard();
+            RestartPrompt();
+        }
+    }
+
+    void CheckWinner()
+    {
+        if (pf::alien.isDead)
+        {
+            pf::Pause();
+            RefreshBoard();
+            cout << "Zombie wins." << endl;
+            RestartPrompt();
+        }
+        else
+        {
+            for (int i = 0; i < pf::zombiesArray.size(); ++i)
+            {
+                Zombie &z = pf::zombiesArray[i];
+                if (!z.isDead)
+                {
+                    return;
+                }
+            }
+            pf::Pause();
+            RefreshBoard();
+            cout << "Alien wins." << endl;
+            RestartPrompt();
+        }
     }
 
     void RockDialogue()
@@ -64,19 +122,61 @@ namespace cmd
 
         if (pf::alien.isDead)
         {
-            cout << "Alien is defeated." << endl;
+            cout << "Alien is defeated." << endl
+                 << endl;
+            CheckWinner();
         }
         else
         {
-            cout << "Alien is still alive." << endl;
+            cout << "Alien is still alive." << endl
+                 << endl;
         }
-        cout << endl;
     }
 
     void PodDialogue()
     {
         Zombie z = pf::zombiesArray[col::zombieToPodIndex];
         ZombieDamagedDialogue(z, 10);
+    }
+
+    void PoisonDialogue()
+    {
+        Alien &a = pf::alien;
+
+        if (a.poison)
+        {
+            cout << "Uhoh! Alien got poisoned and receives a damage of 10 for " << a.poison << " round(s)." << endl;
+
+            if (a.isDead)
+            {
+                cout << "Alien is defeated." << endl
+                     << endl;
+                CheckWinner();
+            }
+            else
+            {
+                cout << "Alien is still alive." << endl;
+            }
+        }
+        else
+        {
+            cout << "Alien is no longer poisoned." << endl;
+        }
+    }
+
+    void ZombieWitchDialogue(Zombie z)
+    {
+        if (z.poison == 3)
+        {
+            cout << "Zombie " << z.sequence << " receives an additional attack of 10 from the witch for 3 rounds." << endl;
+        }
+        else if (!z.poison)
+        {
+            cout << "The witch's spell has worn off. Zombie " << z.sequence << "'s attack has returned to normal." << endl
+                 << endl;
+            pf::Pause();
+            RefreshBoard();
+        }
     }
 
     void AlienDialogue(char col)
@@ -107,76 +207,37 @@ namespace cmd
                 cout << "Alien hits a border." << endl;
                 break;
             case 'h':
-                cout << "Alien finds a health pack." << endl;
+                cout << "Alien finds a ";
+                ColorString("health pack.\n", 2);
                 cout << "Alien's life is increased by 20." << endl;
                 break;
             case 'r':
-                cout << "Alien stumbles upon a rock." << endl;
+                cout << "Alien stumbles upon a ";
+                ColorString("rock.\n", 4);
                 RockDialogue();
                 break;
             case 'p':
-                cout << "Alien finds a pod." << endl;
+                cout << "Alien finds a ";
+                ColorString("pod.\n", 3);
                 PodDialogue();
+                break;
+            case 'w':
+                cout << "Alien finds a ";
+                ColorString("witch.\n", 5);
+                PoisonDialogue();
+                break;
+            case '\2':
+                break;
+            case 'o':
+                cout << "Alien finds a ";
+                ColorString("fireball.\n", 1);
+                cout << "Alien has " << pf::alien.fireball << " fireball(s). " << endl;
                 break;
             default:
                 cout << "Alien finds an empty space." << endl;
             }
         }
         cout << endl;
-    }
-
-    void RestartPrompt()
-    {
-        char again;
-
-        cout << "Play again? (y/n)> ";
-        cin >> again;
-        again = tolower(again);
-
-        if (again == 'y')
-        {
-            cout << "\nNew board initialized." << endl;
-            pf::CreateGameBoard();
-        }
-        else if (again == 'n')
-        {
-            cout << "\nGoodbye!" << endl;
-            g_quitGame = true;
-        }
-        else
-        {
-            cout << "Invalid Input!" << endl;
-            pf::Pause();
-            RefreshBoard();
-            RestartPrompt();
-        }
-    }
-
-    void CheckWinner()
-    {
-        
-        if (pf::alien.isDead)
-        {
-            pf::Pause();
-            RefreshBoard();
-            cout << "Zombie wins." << endl;
-            RestartPrompt();
-        }
-        else
-        {
-            for (int i = 0; i < pf::zombiesArray.size(); ++i)
-            {
-                Zombie &z = pf::zombiesArray[i];
-                if (!z.isDead) 
-                {
-                    return;
-                }
-            }
-            pf::Pause();
-            RefreshBoard();
-            cout << "Alien wins." << endl;
-            RestartPrompt();
-        }
     }
 
     void ZombieTurnEnd()
@@ -202,7 +263,6 @@ namespace cmd
             {
                 z.active = true;
                 activeZombieIndex = i;
-
                 break;
             }
         }
@@ -211,6 +271,10 @@ namespace cmd
         if (activeZombieIndex == oldIndex)
         {
             pf::alien.active = true;
+            if (pf::alien.poison)
+            {
+                pf::alien.triggerPoison = true;
+            }
         }
 
         CheckWinner();
@@ -222,22 +286,39 @@ namespace cmd
 
         int targetX, targetY;
         string direction = activeZombie.GetDirection(targetX, targetY);
-        
+
+        if (activeZombie.poison)
+        {
+            col::ZombieWitchEncounter(activeZombie);
+            ZombieWitchDialogue(activeZombie);
+        }
+
         activeZombie.Move(targetX, targetY);
-        cout << "Zombie " << activeZombie.sequence << " moves " << direction << "." << endl 
-            << endl;
+        cout << "Zombie " << activeZombie.sequence << " moves " << direction << "." << endl;
+
+        if (activeZombie.encounterWitch)
+        {
+            cout << "Zombie encounters a witch." << endl;
+            col::ZombieWitchEncounter(activeZombie);
+            ZombieWitchDialogue(activeZombie);
+            activeZombie.encounterWitch = false;
+        }
+        cout << endl;
 
         pf::Pause();
-
         RefreshBoard();
 
+        // if alien is within range of zombie, attack alien
         bool canAttack = activeZombie.CanAttack(pf::alien);
 
-        // if alien is within range of zombie, attack alien
         if (canAttack)
         {
             activeZombie.Attack(pf::alien);
             AlienDamagedDialogue();
+            if (g_quitGame)
+            {
+                return;
+            }
         }
         else
         {
@@ -256,9 +337,9 @@ namespace cmd
         // Toggling aline.active to show the '->' symbol beside alien for one last time
         pf::alien.active = true;
         RefreshBoard();
-         
+
         cout << "Alien's turn ends. The trail is reset." << endl
-            << endl;
+             << endl;
 
         pf::alien.active = false;
 
@@ -289,6 +370,18 @@ namespace cmd
         int targetX, targetY;
         pf::alien.GetNextCoord(movingDirection, targetX, targetY);
 
+        if (pf::alien.poison && pf::alien.triggerPoison)
+        {
+            RefreshBoard();
+            col::AlienWitchEncounter();
+            PoisonDialogue();
+            cout << endl;
+            pf::alien.triggerPoison = false;
+
+            pf::Pause();
+            RefreshBoard();
+        }
+
         char col = pf::alien.CheckForCollision(targetX, targetY);
 
         pf::alien.Move(targetX, targetY);
@@ -304,6 +397,112 @@ namespace cmd
         else
         {
             AlienTurnEnd();
+        }
+    }
+
+    void ShootFireball(int targetX, int targetY)
+    {
+        int fireballDmg = 5;
+        vector<vector<int>> targetedCoords;
+        vector<vector<int>> explosionCoords;
+
+        vector<int> center = {targetX, targetY};
+        targetedCoords.push_back(center);
+        vector<int> left = {targetX - 1, targetY};
+        targetedCoords.push_back(left);
+        vector<int> right = {targetX + 1, targetY};
+        targetedCoords.push_back(right);
+        vector<int> top = {targetX, targetY - 1};
+        targetedCoords.push_back(top);
+        vector<int> topLeft = {targetX - 1, targetY - 1};
+        targetedCoords.push_back(topLeft);
+        vector<int> topRight = {targetX + 1, targetY - 1};
+        targetedCoords.push_back(topRight);
+        vector<int> bottom = {targetX, targetY + 1};
+        targetedCoords.push_back(bottom);
+        vector<int> bottomLeft = {targetX - 1, targetY + 1};
+        targetedCoords.push_back(bottomLeft);
+        vector<int> bottomRight = {targetX + 1, targetY + 1};
+        targetedCoords.push_back(bottomRight);
+
+        for (int i = 0; i < targetedCoords.size(); ++i)
+        {
+            vector<int> coord = targetedCoords[i];
+            int x = coord[0], y = coord[1];
+
+            if (x < 0 || y < 0 || y > pf::kRows - 1 || x > pf::kColumns - 1)
+            {
+                continue;
+            }
+            else
+            {
+                explosionCoords.push_back(coord);
+            }
+        }
+
+        cout << "\nThe fireball has destroyed nearby objects. " << endl;
+        for (int i = 0; i < explosionCoords.size(); ++i)
+        {
+            vector<int> coord = explosionCoords[i];
+            char obj = pf::b[coord[1]][coord[0]];
+
+            if (obj == g_alien)
+            {
+                continue;
+            }
+            else if (int(obj) > 48 && int(obj) < 58) // ASCII: 49-57 = 1-9
+            {
+                for (int j = 0; j < pf::zombiesArray.size(); ++j)
+                {
+                    if (obj == pf::zombiesArray[j].character)
+                    {
+                        Zombie &z = pf::zombiesArray[j];
+                        cout << "Zombie " << z.sequence << " is within the explosion range." << endl;
+                        z.TakeDamage(fireballDmg);
+                        ZombieDamagedDialogue(z, fireballDmg);
+                    }
+                }
+            }
+            else
+            {
+                pf::b[coord[1]][coord[0]] = g_trail;
+            }
+        }
+        cout << endl;
+        pf::Pause();
+        RefreshBoard();
+        pf::alien.DecreaseFireball();
+        cout << "Alien has " << pf::alien.fireball << " fireball(s) left." << endl
+             << endl;
+    }
+
+    void FireballCommand()
+    {
+        if (!pf::alien.fireball)
+        {
+            cout << "Alien do not have any fireball to shoot." << endl
+                 << endl;
+            pf::Pause();
+            return;
+        }
+        int targetX, targetY;
+        cout << "Enter row and column to shoot fireball: ";
+        cin >> targetY >> targetX;
+
+        targetX--;
+        targetY--;
+
+        if (targetX < 0 || targetY < 0 || targetY > pf::kRows - 1 || targetX > pf::kColumns - 1)
+        {
+            cout << "Invalid input. Rows and columns are out of bound of the board." << endl;
+            pf::Pause();
+            return;
+        }
+        else
+        {
+            ShootFireball(targetX, targetY);
+            pf::Pause();
+            CheckWinner();
         }
     }
 
@@ -332,8 +531,9 @@ namespace cmd
             pf::Pause();
             return;
         }
-        else if (arow > pf::kRows || acol > pf::kColumns){
-            cout << "Invalid input. Rows and columns are out of bound for the table." << endl;
+        else if (arow > pf::kRows - 1 || acol > pf::kColumns - 1)
+        {
+            cout << "Invalid input. Rows and columns are out of bound of the board." << endl;
             pf::Pause();
             return;
         }
@@ -370,7 +570,8 @@ namespace cmd
         pf::Pause();
     }
 
-    void SaveGame(){
+    void SaveGame()
+    {
         string fileName;
         cout << "Enter the file name to save the current game: ";
         cin >> fileName;
@@ -381,9 +582,9 @@ namespace cmd
         {
             // Store board dimensions and characters
             fileOut << pf::kRows << " " << pf::kColumns << "\n";
-            for (int i=0; i<pf::kRows; ++i)
+            for (int i = 0; i < pf::kRows; ++i)
             {
-                for (int j=0; j<pf::kColumns;++j)
+                for (int j = 0; j < pf::kColumns; ++j)
                 {
                     fileOut << pf::b[i][j];
                 }
@@ -392,14 +593,16 @@ namespace cmd
 
             // Store alien stats
             Alien a = pf::alien;
-            fileOut << a.x << " " << a.y << " " << a.maxLife << " " << a.life << " " << a.attack << "\n";
+            fileOut << a.x << " " << a.y << " " << a.maxLife << " " << a.life << " " << a.attack
+                    << " " << a.poison << " " << a.triggerPoison << " " << a.fireball << "\n";
 
             // Store zombie stats
-            for (int i=0; i<pf::zombiesArray.size(); ++i)
+            for (int i = 0; i < pf::zombiesArray.size(); ++i)
             {
                 Zombie z = pf::zombiesArray[i];
-                fileOut << z.x << " " << z.y << " " << z.sequence << " " << z.life << " " << z.attack 
-                    << " " << z.range << " " << z.initialLife << " " << z.initialAttack << " " << z.initialRange << "\n";
+                fileOut << z.x << " " << z.y << " " << z.sequence << " " << z.life << " " << z.attack
+                        << " " << z.range << " " << z.initialLife << " " << z.initialAttack << " " << z.initialRange
+                        << " " << z.poison << " " << z.encounterWitch << "\n";
             }
 
             fileOut.close();
@@ -416,12 +619,12 @@ namespace cmd
     vector<int> BreakDownLine(string line)
     {
         // Used to break down words in 'line' by space
-        istringstream ss(line); 
+        istringstream ss(line);
 
         // Store individual number
         int num;
         vector<int> v;
-        
+
         while (ss >> num)
         {
             v.push_back(num);
@@ -453,28 +656,34 @@ namespace cmd
     void LoadAlienStats(string line)
     {
         vector<int> AStats = BreakDownLine(line);
-        
+
         pf::alien.x = AStats[0];
         pf::alien.y = AStats[1];
         pf::alien.maxLife = AStats[2];
         pf::alien.life = AStats[3];
         pf::alien.attack = AStats[4];
+        pf::alien.poison = AStats[5];
+        pf::alien.triggerPoison = AStats[6];
+        pf::alien.fireball = AStats[7];
     }
 
-    void LoadZombieStats(string line, vector<Zombie>& ZArray)
+    void LoadZombieStats(string line, vector<Zombie> &ZArray)
     {
         vector<int> ZStats = BreakDownLine(line);
-        
-        if (ZStats.size() < 6) return;
+
+        if (ZStats.size() < 11)
+            return;
 
         Zombie z(ZStats[2], ZStats[0], ZStats[1]); // Zombie(sequence no, x, y)
 
         z.life = ZStats[3];
-        z.attack = ZStats[4]; 
-        z.range = ZStats[5]; 
-        z.initialLife = ZStats[6]; 
-        z.initialAttack = ZStats[7]; 
-        z.initialRange = ZStats[8]; 
+        z.attack = ZStats[4];
+        z.range = ZStats[5];
+        z.initialLife = ZStats[6];
+        z.initialAttack = ZStats[7];
+        z.initialRange = ZStats[8];
+        z.poison = ZStats[9];
+        z.encounterWitch = ZStats[10];
 
         ZArray.push_back(z);
     }
@@ -511,7 +720,7 @@ namespace cmd
             vector<vector<char>> newBoard;
             vector<Zombie> newZombieArray;
 
-            for (int ln=1; getline(fileIn, line); ln++)
+            for (int ln = 1; getline(fileIn, line); ln++)
             {
                 switch (ln)
                 {
@@ -527,8 +736,10 @@ namespace cmd
                     break;
                 case 3:
                     LoadAlienStats(line);
+                    break;
                 default:
                     LoadZombieStats(line, newZombieArray);
+                    break;
                 }
             }
 
@@ -578,23 +789,25 @@ namespace cmd
     void Help()
     {
         cout << "Commands" << endl;
-        cout << "1. up      -"
+        cout << "1. up       -"
              << "Move up." << endl;
-        cout << "2. down    -"
+        cout << "2. down     -"
              << "Move down." << endl;
-        cout << "3. left    -"
+        cout << "3. left     -"
              << "Move left." << endl;
-        cout << "4. right   -"
+        cout << "4. right    -"
              << "Move right." << endl;
-        cout << "5. arrow   -"
+        cout << "5. fireball -"
+             << "Deal explosion with fireball." << endl;
+        cout << "6. arrow    -"
              << "Change the direction of an arrow." << endl;
-        cout << "6. help    -"
+        cout << "7. help     -"
              << "Display these user commands." << endl;
-        cout << "7. save    -"
+        cout << "8. save     -"
              << "Save the game." << endl;
-        cout << "8. load    -"
+        cout << "9. load     -"
              << "Load a game." << endl;
-        cout << "9. quit    -"
+        cout << "10. quit    -"
              << "Quit the game." << endl;
 
         pf::Pause();
@@ -621,18 +834,21 @@ namespace cmd
             AlienMove();
             break;
         case 4:
-            ArrowMovement();
+            FireballCommand();
             break;
         case 5:
-            Help();
+            ArrowMovement();
             break;
         case 6:
-            SaveGame();
+            Help();
             break;
         case 7:
-            LoadGame();
+            SaveGame();
             break;
         case 8:
+            LoadGame();
+            break;
+        case 9:
             Quit();
             break;
         default:

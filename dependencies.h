@@ -10,18 +10,19 @@
 #include <cmath>
 #include <fstream>
 #include <sstream>
+#include <map>
 
 #include "pf/helper.h"
 #include "zombie/zombie.h"
 #include "col/collidable.h"
 #include "alien/alien.h"
 #include "cmd/command.h"
+#include "hangman/hangman.h"
 
 using namespace std;
 
 // NOTE: To compile the game, use
-//    g++ pf\*.cpp zombie\*.cpp col\*.cpp alien\*.cpp cmd\*.cpp  main.cpp
-
+//    g++ pf\*.cpp zombie\*.cpp col\*.cpp alien\*.cpp cmd\*.cpp hangman\*.cpp main.cpp
 
 // global variables (declared in main.cpp)
 extern const char g_alien;
@@ -34,6 +35,9 @@ extern const char g_pod;
 extern const char g_rock;
 extern const char g_empty;
 extern const char g_trail;
+extern const char g_witch;
+extern const char g_hangman;
+extern const char g_fireball;
 
 extern vector<char> g_collidableObjects;
 

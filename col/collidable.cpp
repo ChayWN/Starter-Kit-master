@@ -4,6 +4,8 @@ namespace col
 {
     char underRock;
     int zombieToPodIndex;
+    int witchStat = 10;
+    bool canPoisonAlien;
 
     void HealthPickUp()
     {
@@ -25,7 +27,7 @@ namespace col
     {
         int podX, podY;
         vector<int> arr;
-        int smallest;
+        int smallestIndex;
         pf::alien.GetNextCoord(cmd::movingDirection, podX, podY);
 
         for (int i = 0; i < pf::zombiesArray.size(); ++i)
@@ -42,33 +44,76 @@ namespace col
         {
             if (!pf::zombiesArray[i].isDead)
             {
-                smallest = arr[i];
+                smallestIndex = i;
             }      
         }
         
         for (int i = 0; i < arr.size(); ++i)
         {
-            if (arr[i] < smallest && !pf::zombiesArray[i].isDead)
+            if (arr[i] < arr[smallestIndex] && !pf::zombiesArray[i].isDead)
             {
-                smallest = arr[i];
+                smallestIndex = i;
             }
         }
 
-        for (int i = 0; i < arr.size(); ++i)
-        {
-            if (arr[i] == smallest)
-            {
-                zombieToPodIndex = i;
-                pf::zombiesArray[i].TakeDamage(10);
-                break;
-            }
-        }
+        zombieToPodIndex = smallestIndex;
+        pf::zombiesArray[smallestIndex].TakeDamage(10);
     }
 
     void ArrowPickUp(string direction)
     {
         cmd::movingDirection = direction;
         pf::alien.IncreaseAttack(20);
+    }
+
+    void FireballPickUp()
+    {
+        pf::alien.IncreaseFireball();
+    }
+
+    void AlienWitchEncounter()
+    {
+        Alien& a = pf::alien;
+        
+        a.poison--;
+        
+        if (a.poison == 0)
+        {
+            a.triggerPoison = false;
+        }
+        else
+        {
+            a.TakeDamage(witchStat);
+        }
+    }
+
+    void PoisonConsume()
+    {
+        Alien& a = pf::alien;
+
+        a.poison = 4;
+        AlienWitchEncounter();
+
+    }
+
+    void ZombieWitchEncounter(Zombie& z)
+    {     
+        if (!z.poison || z.encounterWitch)
+        {
+            z.poison = 3;
+            z.ResetAttack();
+            z.IncreaseAttack(witchStat);
+        }  
+        else if (z.poison)
+        {
+            z.poison--;
+
+            if (z.poison == 0)
+            {
+                z.ResetAttack();
+            }
+        }
+        
     }
 
     void OnCollide(char col, int x, int y)
@@ -95,6 +140,12 @@ namespace col
             break;
         case '>':
             ArrowPickUp(g_right);
+            break;
+        case 'w':
+            PoisonConsume();
+            break;
+        case 'o':
+            FireballPickUp();
             break;
         }
     }

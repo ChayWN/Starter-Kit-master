@@ -20,12 +20,16 @@ const char g_pod = 'p';
 const char g_rock = 'r';
 const char g_empty = ' ';
 const char g_trail = '.';
+const char g_witch = 'w';
+const char g_hangman = '\2';
+const char g_fireball = 'o';
+// can try other numbers to print other symbols too, for example '\3', but it only supports number from 1 up to 7
 
-vector<char> g_collidableObjects = 
-{
-    g_arrowUp, g_arrowDown, g_arrowLeft, g_arrowRight,
-    g_health, g_pod, g_rock
-};
+vector<char>
+    g_collidableObjects =
+        {
+            g_arrowUp, g_arrowDown, g_arrowLeft, g_arrowRight,
+            g_health, g_pod, g_rock, g_witch, g_hangman, g_fireball};
 
 const string g_up = "up";
 const string g_down = "down";

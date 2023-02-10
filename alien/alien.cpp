@@ -6,13 +6,18 @@ Alien::Alien()
     life = 100 + (rand() % 100);
     maxLife = life;
     attack = 0;
+    poison = 0;
+    fireball = 0;
 }
 
 void Alien::Reset()
 {
     isDead = false;
     active = true;
+    triggerPoison = false;
     life = maxLife;
+    poison = 0;
+    fireball = 0;
     ResetAttack();
 }
 
@@ -34,6 +39,16 @@ void Alien::ResetAttack()
 void Alien::IncreaseAttack(int atk)
 {
     attack += atk;
+}
+
+void Alien::IncreaseFireball()
+{
+    fireball++;
+}
+
+void Alien::DecreaseFireball()
+{
+    fireball--;
 }
 
 void Alien::TakeDamage(int dmg)
@@ -69,6 +84,11 @@ bool Alien::Collide(char col, int targetX, int targetY)
     if (col == 'b' || col == g_rock)
     {
         canMove = false;
+    }
+
+    if (col == g_hangman)
+    {
+        return hangman::PlayHangmanGame(targetX, targetY);
     }
 
     col::OnCollide(col, targetX, targetY);

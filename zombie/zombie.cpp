@@ -6,6 +6,7 @@ Zombie::Zombie(int no, int X, int Y)
     y = Y;
     sequence = no;
     character = 48 + no;
+    poison = 0;
 
     life = 100 + (rand() % 101);
     attack = 5 + (rand() % 20);
@@ -20,9 +21,21 @@ void Zombie::Reset()
 {
     isDead = false;
     active = false;
+    encounterWitch = false;
+    poison = 0;
     life = initialLife;
     attack = initialAttack;
     range = initialRange;
+}
+
+void Zombie::ResetAttack()
+{
+    attack = initialAttack;
+}
+
+void Zombie::IncreaseAttack(int atk)
+{
+    attack += atk;
 }
 
 void Zombie::TakeDamage(int dmg)
@@ -115,6 +128,11 @@ char Zombie::CheckForCollision(int targetX, int targetY)
     if (obj == g_alien)
     {
         return g_alien;
+    }
+
+    if (obj == g_witch)
+    {
+        encounterWitch = true;
     }
 
     return col;
